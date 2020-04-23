@@ -7,7 +7,7 @@ More information can be found [here](https://www.trendmicro.com/en_au/business/p
 ## Deployment
 ### Lambda layer
 
-1. Create and upload an Application Security Lambda Layer:
+1. Create an Application Security Lambda Layer:
     
    ```
     mkdir /tmp/python
@@ -72,4 +72,4 @@ These keys can be used by an attacker to access and control your AWS account.
 # Contact
 
 * Blog: [oznetnerd.com](https://oznetnerd.com)
-* Email: [will@oznetnerd.com](mailto:will@oznetnerd.com)   
+* Email: [will@oznetnerd.com](mailto:will@oznetnerd.com)
