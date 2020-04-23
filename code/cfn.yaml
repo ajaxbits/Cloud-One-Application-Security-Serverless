@@ -1,0 +1,210 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Trend Micro Application Security Demo app"
+
+Parameters:
+  ApiGatewayName:
+    Type: "String"
+    Default: "ApplicationSecurity"
+
+  ApiGatewayDescription:
+    Type: "String"
+    Default: "Trend Micro Application Security demo"
+
+  ApiGatewayStageName:
+    Type: "String"
+    Default: "v1"
+
+  ApiGatewayPath:
+    Type: "String"
+    Default: "app"
+
+  LambdaFunctionName:
+    Type: "String"
+    Default: "ApplicationSecurityDemo"
+
+  LambdaFunctionDescription:
+    Type: "String"
+    Default: "Application Security demo app"
+
+  ApplicationSecurityLayerArn:
+    Type: "String"
+    Default: ""
+
+  ApplicationSecurityApiKey:
+    Type: "String"
+    Default: ""
+
+  ApplicationSecurityApiSecret:
+    Type: "String"
+    Default: ""
+
+Resources:
+  ApiGateway:
+    Type: "AWS::ApiGateway::RestApi"
+    Properties:
+      Name: !Ref ApiGatewayName
+      Description: !Ref ApiGatewayDescription
+
+  ApiGatewayResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ParentId: !GetAtt ApiGateway.RootResourceId
+      PathPart: !Ref ApiGatewayPath
+
+  ApiGatwayGetMethod:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ResourceId: !Ref ApiGatewayResource
+      HttpMethod: "GET"
+      AuthorizationType: "NONE"
+      Integration:
+        IntegrationHttpMethod: "POST"
+        Type: "AWS_PROXY"
+        Uri: !Sub
+          - "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations"
+          - lambdaArn: !GetAtt LambdaFunction.Arn
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: "Empty"
+
+  ApiGatewayDeployment:
+    Type: "AWS::ApiGateway::Deployment"
+    DependsOn:
+      - "ApiGatwayGetMethod"
+    Properties:
+      RestApiId: !Ref ApiGateway
+      StageName: !Ref ApiGatewayStageName
+
+  LambdaFunction:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Layers:
+        - !Ref ApplicationSecurityLayerArn
+      Code:
+        ZipFile: |
+            import os
+            import trend_app_protect.start
+            from trend_app_protect.api.aws_lambda import protect_handler
+            from trend_app_protect.exceptions import TrendAppProtectBlocked
+
+            @protect_handler
+            def lambda_handler(event, context):
+                print(f'Event: {event}')
+
+                try:
+                    query_entry = event['queryStringParameters']['name']
+
+                    if os.path.isfile(query_entry):
+                        with open(query_entry, 'r') as f:
+                            file_contents = f.read()
+
+                            if query_entry.lower() == '../../proc/self/environ':
+                                split_vars = file_contents.split(':')
+                                output = '<br>'.join(split_vars)
+                                print(file_contents)
+
+                            else:
+                                output = file_contents.replace('\n', '<br>')
+
+                    else:
+                        output = f'Hello {query_entry}!'
+
+                except (KeyError, TypeError):
+                    output = ''
+
+                except TrendAppProtectBlocked:
+                    output = 'Suspicious activity blocked. Please check the console for more information.'
+
+                return {
+                    'body': f"""<html>
+                <head>
+                    <title>Hello World!</title>
+                </head>
+                <body>
+                    <h1>Hello World!</h1>
+                    <h2>Name</h2>
+
+                    <p>Please enter your name:
+                    <form action="?" method="get">
+                      <input type="text" id="name" name="name"><br><br>
+                      <input type="submit" value="Submit">
+                    </form>
+
+                    <h2>Output</h2>
+                    <p>{output}</p>
+                </body>
+                </html>""",
+                    'headers': {
+                        'Content-Type': 'text/html'
+
+                    },
+                    'statusCode': 200
+                }
+      Description: !Ref LambdaFunctionDescription
+      FunctionName: !Ref LambdaFunctionName
+      Handler: "index.lambda_handler"
+      MemorySize: 512
+      Role: !GetAtt "lambdaIAMRole.Arn"
+      Runtime: "python3.7"
+      Timeout: 40
+      Environment:
+        Variables:
+          TREND_AP_KEY: !Ref ApplicationSecurityApiKey
+          TREND_AP_SECRET: !Ref ApplicationSecurityApiSecret
+          TREND_AP_READY_TIMEOUT: 30
+          TREND_AP_TRANSACTION_FINISH_TIMEOUT: 10
+          TREND_AP_MIN_REPORT_SIZE: 1
+          TREND_AP_INITIAL_DELAY_MS: 1
+          TREND_AP_MAX_DELAY_MS: 100
+          TREND_AP_HTTP_TIMEOUT: 5
+          TREND_AP_PREFORK_MODE: False
+          TREND_AP_CACHE_DIR: /tmp/trend_cache
+          TREND_AP_LOG_FILE: STDERR
+
+  lambdaApiGatewayInvoke:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      Action: "lambda:InvokeFunction"
+      FunctionName: !GetAtt "LambdaFunction.Arn"
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*
+      Principal: "apigateway.amazonaws.com"
+
+  lambdaIAMRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Action:
+              - "sts:AssumeRole"
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+      Policies:
+        - PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Effect: "Allow"
+                Resource:
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${LambdaFunctionName}:*"
+          PolicyName: "lambda"
+
+  lambdaLogGroup:
+    Type: "AWS::Logs::LogGroup"
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${LambdaFunctionName}"
+
+Outputs:
+  AppUrl:
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${ApiGatewayStageName}/${ApiGatewayPath}"
+
+  LambdaArn:
+    Value: !GetAtt "LambdaFunction.Arn"
