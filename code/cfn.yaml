@@ -206,5 +206,3 @@ Outputs:
   AppUrl:
     Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${ApiGatewayStageName}/${ApiGatewayPath}"
 
-  LambdaArn:
-    Value: !GetAtt "LambdaFunction.Arn"
