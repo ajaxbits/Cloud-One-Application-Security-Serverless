@@ -13,6 +13,7 @@ More information can be found [here](https://www.trendmicro.com/en_au/business/p
     mkdir /tmp/python
     cd /tmp/python
     pip3 install --target=/tmp/python trend-app-protect
+    cd ..
     zip -r trend.zip python
     aws lambda publish-layer-version \
         --layer-name app-protect \
