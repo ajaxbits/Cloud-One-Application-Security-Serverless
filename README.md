@@ -1,26 +1,51 @@
 # Cloud One Application Security - Severless demo
 
-A demonstration of how Trend Micro's "Cloud One: Application Security" product can be used to protect serverless applications.
-
-More information can be found [here](https://www.trendmicro.com/en_au/business/products/hybrid-cloud/cloud-one-workload-security.html), as well as in the [docs.](https://cloudone.trendmicro.com/docs/application-security/introduction/#)
+A demonstration of how Trend Micro's "Cloud One: [Application Security](https://cloudone.trendmicro.com/docs/application-security/introduction/)" solution can be used to protect serverless applications.
 
 ## Deployment
-### Lambda layer
 
-1. Create an Application Security Lambda Layer:
+This demo uses a Lambda layer. Doing so enables Application Security to be used with numerous Lambdas with ease.
+
+If you're creating the layer on your machine, please follow the _"Linux/Mac/Windows"_ instructions. Alternatively, if you're using EC2, please follow the _"EC2"_ instructions.  
+
+### Lambda layer - Linux/Mac/Windows
+
+See [this document](https://aws.amazon.com/premiumsupport/knowledge-center/lambda-layer-simulated-docker/) for more information.
+
+```
+cd /tmp
+mkdir -p app-sec-layer/python/lib/python3.7/
+cd app-sec-layer
+echo "trend-app-protect" >> requirements.txt
+
+docker run \
+-v "$PWD":/var/task \
+"lambci/lambda:build-python3.7" \
+/bin/sh -c "pip install -r requirements.txt -t python/lib/python3.7/site-packages/; exit"
+
+zip -r trend.zip python > /dev/null
+
+aws lambda publish-layer-version \
+--layer-name app-protect \
+--description "Trend Micro Application Security" \
+--zip-file fileb://trend.zip \
+--compatible-runtime "python3.7"
+```
+
+### Lambda layer - EC2
     
-   ```
-    mkdir /tmp/python
-    cd /tmp/python
-    pip3 install --target=/tmp/python trend-app-protect
-    cd ..
-    zip -r trend.zip python
-    aws lambda publish-layer-version \
-        --layer-name app-protect \
-        --description "App Protect" \
-        --zip-file fileb://trend.zip \
-        --compatible-runtimes python3.7
-    ```
+```
+mkdir /tmp/python
+cd /tmp/python
+pip3 install --target=/tmp/python trend-app-protect
+cd ..
+zip -r trend.zip python
+aws lambda publish-layer-version \
+    --layer-name app-protect \
+    --description "App Protect" \
+    --zip-file fileb://trend.zip \
+    --compatible-runtimes python3.7
+```
 
 ### Deploy app
  
