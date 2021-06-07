@@ -26,10 +26,6 @@ Parameters:
     Type: "String"
     Default: "Application Security demo app"
 
-  ApplicationSecurityLayerArn:
-    Type: "String"
-    Default: ""
-
   ApplicationSecurityApiKey:
     Type: "String"
     Default: ""
