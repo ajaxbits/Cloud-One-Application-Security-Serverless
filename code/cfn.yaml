@@ -66,7 +66,7 @@ Resources:
           - "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations"
           - lambdaArn: !GetAtt LambdaFunction.Arn
       MethodResponses:
-        - StatusCode: 200
+        - StatusCode: "200"
           ResponseModels:
             application/json: "Empty"
 
@@ -82,7 +82,7 @@ Resources:
     Type: "AWS::Lambda::Function"
     Properties:
       Layers:
-        - !Ref ApplicationSecurityLayerArn
+        - !Sub "arn:aws:lambda:${AWS::Region}:800880067056:layer:CloudOne-ApplicationSecurity-bare-python3_7:4"
       Code:
         ZipFile: |
             import os
