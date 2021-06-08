@@ -190,13 +190,13 @@ Resources:
                   - "logs:PutLogEvents"
                 Effect: "Allow"
                 Resource:
-                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${LambdaFunctionPrefix}:*"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${LambdaFunctionPrefix}-${AWS::StackName}:*"
           PolicyName: !Sub "lambda-${AWS::StackName}"
 
   lambdaLogGroup:
     Type: "AWS::Logs::LogGroup"
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${LambdaFunctionPrefix}"
+      LogGroupName: !Sub "/aws/lambda/${LambdaFunctionPrefix}-${AWS::StackName}"
 
 Outputs:
   AppUrl:
