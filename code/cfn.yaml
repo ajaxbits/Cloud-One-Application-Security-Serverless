@@ -2,13 +2,13 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: "Trend Micro Application Security Demo app"
 
 Parameters:
-  ApiGatewayName:
+  ApiGatewayPrefix:
     Type: "String"
     Default: "ApplicationSecurity"
 
   ApiGatewayDescription:
     Type: "String"
-    Default: "Trend Micro Application Security demo"
+    Default: "Trend Micro Application Security Demo Gateway"
 
   ApiGatewayStageName:
     Type: "String"
@@ -18,13 +18,13 @@ Parameters:
     Type: "String"
     Default: "app"
 
-  LambdaFunctionName:
+  LambdaFunctionPrefix:
     Type: "String"
     Default: "ApplicationSecurityDemo"
 
   LambdaFunctionDescription:
     Type: "String"
-    Default: "Application Security demo app"
+    Default: "Trend Micro Application Security Demo Application"
 
   ApplicationSecurityApiKey:
     Type: "String"
@@ -38,7 +38,7 @@ Resources:
   ApiGateway:
     Type: "AWS::ApiGateway::RestApi"
     Properties:
-      Name: !Ref ApiGatewayName
+      Name: !Sub "${ApiGatewayPrefix}-${AWS::StackName}"
       Description: !Ref ApiGatewayDescription
 
   ApiGatewayResource:
@@ -140,7 +140,7 @@ Resources:
                     'statusCode': 200
                 }
       Description: !Ref LambdaFunctionDescription
-      FunctionName: !Ref LambdaFunctionName
+      FunctionName: !Sub "${LambdaFunctionPrefix}-${AWS::StackName}"
       Handler: "index.lambda_handler"
       MemorySize: 512
       Role: !GetAtt "lambdaIAMRole.Arn"
@@ -190,13 +190,13 @@ Resources:
                   - "logs:PutLogEvents"
                 Effect: "Allow"
                 Resource:
-                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${LambdaFunctionName}:*"
-          PolicyName: "lambda"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${LambdaFunctionPrefix}:*"
+          PolicyName: !Sub "lambda-${AWS::StackName}"
 
   lambdaLogGroup:
     Type: "AWS::Logs::LogGroup"
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${LambdaFunctionName}"
+      LogGroupName: !Sub "/aws/lambda/${LambdaFunctionPrefix}"
 
 Outputs:
   AppUrl:
