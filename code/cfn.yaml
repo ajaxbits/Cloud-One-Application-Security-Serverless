@@ -92,6 +92,7 @@ Resources:
 
                 try:
                     query_entry = event['queryStringParameters']['name']
+                    user_image = event['queryStringParameters']['image-file']
 
                     if os.path.isfile(query_entry):
                         with open(query_entry, 'r') as f:
@@ -104,9 +105,15 @@ Resources:
 
                             else:
                                 output = file_contents.replace('\n', '<br>')
-
                     else:
                         output = f'Hello {query_entry}!'
+                    
+                    if os.path.isfile(user_image):
+                        with open(user_image, 'r') as f:
+                            file_contents = f.read()
+                            print(file_contents)
+                    else:
+                        print("something went wrong")
 
                 except (KeyError, TypeError):
                     output = ''
@@ -128,9 +135,15 @@ Resources:
                       <input type="text" id="name" name="name"><br><br>
                       <input type="submit" value="Submit">
                     </form>
+                    
 
                     <h2>Output</h2>
                     <p>{output}</p>
+                    <h1>Upload</h1>
+                    <form enctype="multipart/form-data" action="/upload/image" id="submitFile" method="post">
+                        <input id="image-file" type="file" />
+                        <button type="submit" onClick="submitToAPI(event)">Upload</button>   
+                    </form>
                 </body>
                 </html>""",
                     'headers': {
